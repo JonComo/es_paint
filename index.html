@@ -23,7 +23,7 @@
     var agent = {x: canvas.width/2, y: canvas.height/2};
 
     var SIGMA = 20;
-    var LEARN_RATE = .1;
+    var LEARN_RATE = .5;
     var SAMPLES = 100;
 
     // pixels
@@ -145,8 +145,8 @@
         ctx.lineTo(agent.x + update.x, agent.y + update.y);
         ctx.stroke(); */
 
-        agent.x += update.x * LEARN_RATE / SAMPLES;
-        agent.y += update.y * LEARN_RATE / SAMPLES;
+        agent.x += update.x * LEARN_RATE / (SAMPLES*SIGMA);
+        agent.y += update.y * LEARN_RATE / (SAMPLES*SIGMA);
     }
 
     render();
