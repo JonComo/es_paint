@@ -1,0 +1,153 @@
+<html>
+<head></head>
+<body>
+<script src="math.js"></script>
+<script type="text/javascript">
+
+    let canvas = document.createElement("canvas");
+    canvas.width = 400;
+    canvas.height = 400;
+    document.body.appendChild(canvas);
+    let ctx = canvas.getContext("2d");
+
+    let canvas2 = document.createElement("canvas");
+    canvas2.width = canvas.width;
+    canvas2.height = canvas.height;
+    let ctx2 = canvas2.getContext("2d");
+
+    var mouse_down = false;
+    var mouse = {x: 0, y: 0};
+    var agent = {x: canvas.width/2, y: canvas.height/2};
+
+    var SIGMA = 20;
+    var LEARN_RATE = .1;
+    var SAMPLES = 100;
+
+    // pixels
+    var pixels;
+    function reward_at(x, y) {
+        if (!pixels) {
+            return 0;
+        }
+
+        x = Math.round(x);
+        y = Math.round(y);
+        let index = x + y * canvas.width;
+        index *= 4;
+        let data = pixels.data;
+
+        // return the alpha as the reward
+        if (index+3 > pixels.data.length) {
+            return 0;
+        }
+
+        return data[index+3]/255;
+    }
+
+    window.onkeydown = function(evt) {
+        let key = evt.key;
+        if (key == "c") {
+            // clear
+            ctx2.clearRect(0, 0, canvas.width, canvas.height);
+            pixels = ctx2.getImageData(0, 0, canvas.width, canvas.height);
+        } else if (key == "r") {
+            agent.x = mouse.x;
+            agent.y = mouse.y;
+        }
+    }
+
+    window.onmousedown = function(evt) {
+        mouse_down = true;
+    };
+
+    window.onmouseup = function(evt) {
+        mouse_down = false;
+    };
+
+    window.onmousemove = function(evt) {
+        mouse = {x: evt.offsetX, y: evt.offsetY};
+        if (mouse_down) {
+            // paint
+            let r = 100;
+            var grd = ctx2.createRadialGradient(mouse.x, mouse.y, 1, mouse.x, mouse.y, r);
+
+            grd.addColorStop(0, "rgba(0,0,255,.01)");
+            grd.addColorStop(1, "rgba(0,0,255,0)");
+
+            // Fill with gradient
+            ctx2.fillStyle=grd;
+            ctx2.fillRect(mouse.x - r, mouse.y - r, r*2, r*2);
+
+            pixels = ctx2.getImageData(0, 0, canvas.width, canvas.height);
+        }
+    }
+
+    function rand_normal() {
+        var u = 1 - Math.random(); // Subtraction to flip [0, 1) to (0, 1].
+        var v = 1 - Math.random();
+        return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+    }
+
+    function render() {
+        window.requestAnimationFrame(render);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (pixels) {
+            ctx.putImageData(pixels, 0, 0);
+        }
+
+        // border
+        ctx.strokeRect(4, 4, canvas.width-8, canvas.height-8);
+
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(agent.x-5, agent.y-5, 10, 10);
+
+        if (pixels) {
+            
+        }
+
+        let candidates = [];
+        let rewards = [];
+
+        for (let i = 0; i < SAMPLES; i ++) {
+            // try random new point
+            let noise = {x: rand_normal() * SIGMA, y: rand_normal() * SIGMA};
+            candidates.push(noise);
+
+            let new_point = {x: agent.x + noise.x, y: agent.y + noise.y};
+            ctx.fillRect(new_point.x-1, new_point.y-1, 2, 2);
+
+            // see reward there
+            let r = reward_at(new_point.x, new_point.y);
+            rewards.push(r);
+        }
+
+        // normalize rewards
+        let mean = math.sum(rewards)/SAMPLES;
+        let std = math.std(rewards) + .00001;
+
+        let update = {x: 0, y: 0};
+        for (let i = 0; i < SAMPLES; i ++) {
+            // apply the noise
+            let noise = candidates[i];
+            let r = rewards[i];
+
+            update.x += noise.x * (r-mean)/std;
+            update.y += noise.y * (r-mean)/std;
+        }
+
+        /*
+        ctx.beginPath();
+        ctx.moveTo(agent.x, agent.y);
+        ctx.lineTo(agent.x + update.x, agent.y + update.y);
+        ctx.stroke(); */
+
+        agent.x += update.x * LEARN_RATE / SAMPLES;
+        agent.y += update.y * LEARN_RATE / SAMPLES;
+    }
+
+    render();
+
+    </script>
+  </body>
+</html>
