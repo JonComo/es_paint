@@ -7,6 +7,9 @@
     let canvas = document.createElement("canvas");
     canvas.width = 400;
     canvas.height = 400;
+    canvas.style.position = "absolute";
+    canvas.style.left = window.innerWidth/2-400/2;
+    canvas.style.top = window.innerHeight/2-400/2;
     document.body.appendChild(canvas);
     let ctx = canvas.getContext("2d");
 
